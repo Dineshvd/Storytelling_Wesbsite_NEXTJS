@@ -3,7 +3,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const CURRENT_MODULE = "showcase"; // enforce user rule
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useScroll } from 'framer-motion';
 import Navbar from '@/components/showcase/Navbar';
 import TransformerScrollCanvas from '@/components/showcase/TransformerScrollCanvas';
@@ -12,6 +12,7 @@ import { transformerData, portfolioData } from '@/data/showcase/transformerData'
 
 export default function TransformerPage() {
   const containerRef = useRef<HTMLElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -30,12 +31,13 @@ export default function TransformerPage() {
               scrollYProgress={scrollYProgress} 
               totalFrames={transformerData.totalFrames}
               imageFolderPath={transformerData.imageFolder}
+              onLoadComplete={() => setIsLoaded(true)}
             />
           </div>
           
           {/* z-10 for HUD over canvas */}
           <div className="absolute inset-0 z-10 pointer-events-none">
-            <TransformerExperience scrollYProgress={scrollYProgress} />
+            <TransformerExperience scrollYProgress={scrollYProgress} isLoaded={isLoaded} />
           </div>
         </div>
       </section>

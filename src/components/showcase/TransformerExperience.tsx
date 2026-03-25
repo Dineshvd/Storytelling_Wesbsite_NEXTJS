@@ -9,19 +9,21 @@ import { transformerData } from '@/data/showcase/transformerData';
 
 interface TransformerExperienceProps {
   scrollYProgress: MotionValue<number>;
+  isLoaded?: boolean;
 }
 
-export default function TransformerExperience({ scrollYProgress }: TransformerExperienceProps) {
+export default function TransformerExperience({ scrollYProgress, isLoaded = true }: TransformerExperienceProps) {
   // Scroll Discovery Hint State
   const [hasScrolled, setHasScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
+    if (!isLoaded) return;
     const timer = setTimeout(() => {
       if (!hasScrolled) setShowHint(true);
     }, 3000); // Show powerful hint after 3 seconds of inactivity
     return () => clearTimeout(timer);
-  }, [hasScrolled]);
+  }, [hasScrolled, isLoaded]);
 
   // Phase 1: 0 - 30%
   const phase1Opacity = useTransform(scrollYProgress, [0, 0.1, 0.25, 0.3], [0, 1, 1, 0]);
@@ -112,18 +114,20 @@ export default function TransformerExperience({ scrollYProgress }: TransformerEx
       </motion.div>
 
       {/* Subtle Bottom Scroll Indicator */}
-      <motion.div 
-        style={{ opacity: phase1Opacity }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center z-10"
-      >
-        <div className="w-[1px] h-8 bg-white/20 relative overflow-hidden mt-4">
-          <motion.div 
-            animate={{ y: [0, 32, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-            className="w-full h-1/2 bg-accent-metal"
-          />
-        </div>
-      </motion.div>
+      {isLoaded && (
+        <motion.div 
+          style={{ opacity: phase1Opacity }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center z-10"
+        >
+          <div className="w-[1px] h-8 bg-white/20 relative overflow-hidden mt-4">
+            <motion.div 
+              animate={{ y: [0, 32, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="w-full h-1/2 bg-accent-metal"
+            />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

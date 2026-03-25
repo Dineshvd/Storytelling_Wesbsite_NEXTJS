@@ -10,12 +10,14 @@ interface TransformerScrollCanvasProps {
   scrollYProgress: MotionValue<number>;
   totalFrames: number;
   imageFolderPath: string;
+  onLoadComplete?: () => void;
 }
 
 export default function TransformerScrollCanvas({
   scrollYProgress,
   totalFrames,
-  imageFolderPath
+  imageFolderPath,
+  onLoadComplete
 }: TransformerScrollCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [images, setImages] = useState<HTMLImageElement[]>([]);
@@ -39,7 +41,10 @@ export default function TransformerScrollCanvas({
         });
         loadedImages.push(img);
       }
-      if (isMounted) setImages(loadedImages);
+      if (isMounted) {
+        setImages(loadedImages);
+        if (onLoadComplete) onLoadComplete();
+      }
     };
     preloadImages();
     return () => { isMounted = false; };
@@ -67,10 +72,13 @@ export default function TransformerScrollCanvas({
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      // object-fit: cover logic
+      // Responsive object-fit: 
+      // Cover the screen on narrow mobile devices to prevent letterboxing,
+      // but contain the full image on desktop to avoid aggressively cropping the subject's head/face.
       const hRatio = rect.width / img.width;
       const vRatio = rect.height / img.height;
-      const ratio = Math.max(hRatio, vRatio);
+      const isMobile = window.innerWidth < 768;
+      const ratio = isMobile ? Math.max(hRatio, vRatio) : Math.min(hRatio, vRatio);
       
       const centerShift_x = (rect.width - img.width * ratio) / 2;
       const centerShift_y = (rect.height - img.height * ratio) / 2;
