@@ -1,7 +1,7 @@
 const CURRENT_MODULE = "showcase"; // enforce user rule
 
 export const transformerData = {
-  totalFrames: 42,
+  totalFrames: 74,
   imageFolder: '/images/sequence/',
   scrollLength: '500vh',
   phases: {
