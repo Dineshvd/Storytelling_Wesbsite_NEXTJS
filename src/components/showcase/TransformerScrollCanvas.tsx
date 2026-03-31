@@ -23,30 +23,66 @@ export default function TransformerScrollCanvas({
   const [images, setImages] = useState<HTMLImageElement[]>([]);
   const [loaded, setLoaded] = useState(0);
 
-  // Preload Images
+  // Preload Images - Highly Optimized
   useEffect(() => {
     let isMounted = true;
-    const preloadImages = async () => {
-      const loadedImages: HTMLImageElement[] = [];
-      // Load progressively to not block the main thread
-      for (let i = 1; i <= totalFrames; i++) {
+    
+    const preloadSequence = async () => {
+      const imageArray: HTMLImageElement[] = new Array(totalFrames);
+      
+      // PRIORITY 1: Force load the very first frame synchronously.
+      // This ensures the user instantly sees the Hero image and the UI unblocks before 
+      // the other 73 frames clog the network or throttle the renderer.
+      const firstImg = new Image();
+      firstImg.src = `${imageFolderPath}1.jpg`;
+      
+      await new Promise<void>((resolve) => {
+        firstImg.onload = () => {
+          if (isMounted) {
+             setLoaded(1);
+          }
+          resolve();
+        };
+        firstImg.onerror = () => resolve(); // Continue on failure so app doesn't hang
+      });
+      
+      if (!isMounted) return;
+      imageArray[0] = firstImg;
+      // Push first image so renderFrame(0) works immediately and Canvas is painted
+      setImages([...imageArray]);
+
+      // PRIORITY 2: Map out concurrent requests for the remaining frames.
+      const promises = [];
+      for (let i = 2; i <= totalFrames; i++) {
         const img = new Image();
         img.src = `${imageFolderPath}${i}.jpg`;
-        await new Promise<void>((resolve) => {
+        
+        const asyncLoad = new Promise<void>((resolve) => {
           img.onload = () => {
             if (isMounted) setLoaded(prev => prev + 1);
             resolve();
           };
-          img.onerror = () => resolve(); // Ignore missing initially
+          img.onerror = () => resolve();
         });
-        loadedImages.push(img);
+        
+        imageArray[i - 1] = img;
+        promises.push(asyncLoad);
       }
+      
+      // Push the unresolved image instances to state so scrolling immediately uses them as they resolve
       if (isMounted) {
-        setImages(loadedImages);
-        if (onLoadComplete) onLoadComplete();
+        setImages([...imageArray]);
+      }
+
+      // Wait for all background frames to complete silently.
+      await Promise.all(promises);
+      if (isMounted && onLoadComplete) {
+        onLoadComplete();
       }
     };
-    preloadImages();
+
+    preloadSequence();
+    
     return () => { isMounted = false; };
   }, [totalFrames, imageFolderPath]);
 
